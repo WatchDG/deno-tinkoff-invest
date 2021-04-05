@@ -1,5 +1,5 @@
-import { Instance, ResultFail, ResultOk } from "./deps.ts";
-import type { ResultFAIL, ResultOK } from "./deps.ts";
+import { fail, Instance, ok, tryCatch, tryCatchAsync } from "./deps.ts";
+import type { Result, ResultAsync } from "./deps.ts";
 
 type Options = {
   baseUrl: string;
@@ -103,68 +103,59 @@ export class API {
     });
   }
 
+  @tryCatch
   private static checkData<ResponseType>(
     status: number,
     headers: Headers,
     data?: ResponseType,
-  ): ResultOK<ResponseType> | ResultFAIL<Error> {
-    try {
-      if (status < 200 || status >= 300) {
-        if (data) {
-          const errorData = data as unknown as ResponseError;
-          return ResultFail(
-            new Error(
-              `[${errorData.payload.code}] ${errorData.payload.message}`,
-            ),
-          );
-        }
-        return ResultFail(new Error(`[${status}]`));
+  ): Result<ResponseType, Error> {
+    if (status < 200 || status >= 300) {
+      if (data) {
+        const errorData = data as unknown as ResponseError;
+        return fail(
+          new Error(
+            `[${errorData.payload.code}] ${errorData.payload.message}`,
+          ),
+        );
       }
-      return ResultOk(data!);
-    } catch (error) {
-      return ResultFail(error);
+      return fail(new Error(`[${status}]`));
     }
+    return ok(data!);
   }
 
-  async stocks(): Promise<ResultOK<MarketInstrument[]> | ResultFAIL<Error>> {
-    try {
-      type PayloadType = {
-        total: number;
-        instruments: MarketInstrument[];
-      };
-      const {
-        status,
-        headers,
-        data,
-      } = (await this.instance.get<Response<PayloadType>>("/market/stocks"))
-        .unwrap();
-      const _data = (await API.checkData(status, headers, data)).unwrap();
-      return ResultOk(_data.payload.instruments);
-    } catch (error) {
-      return ResultFail(error);
-    }
+  @tryCatchAsync
+  async stocks(): ResultAsync<MarketInstrument[], Error> {
+    type PayloadType = {
+      total: number;
+      instruments: MarketInstrument[];
+    };
+    const {
+      status,
+      headers,
+      data,
+    } = (await this.instance.get<Response<PayloadType>>("/market/stocks"))
+      .unwrap();
+    const _data = (await API.checkData(status, headers, data)).unwrap();
+    return ok(_data.payload.instruments);
   }
 
+  @tryCatchAsync
   async operations(
     from: Date,
     to: Date,
-  ): Promise<ResultOK<Operation[]> | ResultFAIL<Error>> {
-    try {
-      type PayloadType = {
-        operations: Operation[];
-      };
-      const params = new URLSearchParams({
-        from: from.toISOString(),
-        to: to.toISOString(),
-      });
-      const { status, headers, data } =
-        (await this.instance.get<Response<PayloadType>>("/operations", {
-          params,
-        })).unwrap();
-      const _data = (await API.checkData(status, headers, data)).unwrap();
-      return ResultOk(_data.payload.operations);
-    } catch (error) {
-      return ResultFail(error);
-    }
+  ): ResultAsync<Operation[], Error> {
+    type PayloadType = {
+      operations: Operation[];
+    };
+    const params = new URLSearchParams({
+      from: from.toISOString(),
+      to: to.toISOString(),
+    });
+    const { status, headers, data } =
+      (await this.instance.get<Response<PayloadType>>("/operations", {
+        params,
+      })).unwrap();
+    const _data = (await API.checkData(status, headers, data)).unwrap();
+    return ok(_data.payload.operations);
   }
 }
