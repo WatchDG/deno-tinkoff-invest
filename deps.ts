@@ -10,4 +10,4 @@ export type ResultAsync<DataType, ErrorType> = types.ResultAsync<
   DataType,
   ErrorType
 >;
-export { Instance } from "https://deno.land/x/http_instance@1.1.4/mod.ts";
+export { Instance } from "https://deno.land/x/http_instance@1.2.0/mod.ts";

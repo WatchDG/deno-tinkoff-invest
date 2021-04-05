@@ -210,4 +210,21 @@ export class TinkoffInvestAPI {
       .unwrap();
     return ok(_data.payload);
   }
+
+  @tryCatchAsync
+  async cancelOrder(orderId: string) {
+    const params = new URLSearchParams({
+      orderId,
+    });
+    const { status, headers, data } =
+      (await this.instance.post<undefined, Response<{}>>(
+        "/orders/cancel",
+        void 0,
+        {
+          params,
+        },
+      )).unwrap();
+    (await TinkoffInvestAPI.checkData(status, headers, data)).unwrap();
+    return ok(null);
+  }
 }
