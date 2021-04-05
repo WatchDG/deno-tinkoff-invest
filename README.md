@@ -4,7 +4,7 @@
 
 ```ts
 (async () => {
-    const api = new API({
+    const api = new TinkoffInvestAPI({
         baseUrl: "https://api-invest.tinkoff.ru/openapi",
         token: "...",
     });

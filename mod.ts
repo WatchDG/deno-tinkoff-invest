@@ -91,7 +91,7 @@ type Operation = {
   operationType?: OperationTypeWithCommission;
 };
 
-export class API {
+export class TinkoffInvestAPI {
   private readonly instance: Instance;
 
   constructor(options: Options) {
@@ -135,7 +135,8 @@ export class API {
       data,
     } = (await this.instance.get<Response<PayloadType>>("/market/stocks"))
       .unwrap();
-    const _data = (await API.checkData(status, headers, data)).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
     return ok(_data.payload.instruments);
   }
 
@@ -155,7 +156,8 @@ export class API {
       (await this.instance.get<Response<PayloadType>>("/operations", {
         params,
       })).unwrap();
-    const _data = (await API.checkData(status, headers, data)).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
     return ok(_data.payload.operations);
   }
 }
