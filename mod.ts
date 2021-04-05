@@ -90,6 +90,36 @@ type Operation = {
   date: string;
   operationType?: OperationTypeWithCommission;
 };
+type OperationType = "Buy" | "Sell";
+type OrderStatus =
+  | "New"
+  | "PartiallyFill"
+  | "Fill"
+  | "Cancelled"
+  | "Replaced"
+  | "PendingCancel"
+  | "Rejected"
+  | "PendingReplace"
+  | "PendingNew";
+type OrderType = "Limit" | "Market";
+type Order = {
+  orderId: string;
+  figi: string;
+  operation: OperationType;
+  status: OrderStatus;
+  requestedLots: number;
+  executedLots: number;
+  type: OrderType;
+  price: number;
+};
+
+type OperationsOptions = {
+  figi?: string;
+  account?: string;
+};
+type ActiveOrdersOptions = {
+  account?: string;
+};
 
 export class TinkoffInvestAPI {
   private readonly instance: Instance;
@@ -144,14 +174,18 @@ export class TinkoffInvestAPI {
   async operations(
     from: Date,
     to: Date,
+    options: OperationsOptions = {},
   ): ResultAsync<Operation[], Error> {
     type PayloadType = {
       operations: Operation[];
     };
+    const { figi, account } = options;
     const params = new URLSearchParams({
       from: from.toISOString(),
       to: to.toISOString(),
     });
+    if (figi) params.set("figi", figi);
+    if (account) params.set("brokerAccountId", account);
     const { status, headers, data } =
       (await this.instance.get<Response<PayloadType>>("/operations", {
         params,
@@ -159,5 +193,21 @@ export class TinkoffInvestAPI {
     const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
       .unwrap();
     return ok(_data.payload.operations);
+  }
+
+  @tryCatchAsync
+  async activeOrders(
+    options: ActiveOrdersOptions = {},
+  ): ResultAsync<Order[], Error> {
+    type rT = Response<Order[]>;
+    const { account } = options;
+    const params = new URLSearchParams();
+    if (account) params.set("brokerAccountId", account);
+    const { status, headers, data } = (await this.instance.get<rT>("/orders", {
+      params,
+    })).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
+    return ok(_data.payload);
   }
 }
