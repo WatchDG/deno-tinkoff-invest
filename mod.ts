@@ -112,6 +112,16 @@ type Order = {
   type: OrderType;
   price: number;
 };
+type PlacedLimitOrder = {
+  orderId: string;
+  operation: OperationType;
+  status: OrderStatus;
+  rejectReason?: string;
+  message?: string;
+  requestedLots: number;
+  executedLots: number;
+  commission?: MoneyAmount;
+};
 
 type OperationsOptions = {
   figi?: string;
@@ -119,6 +129,12 @@ type OperationsOptions = {
 };
 type ActiveOrdersOptions = {
   account?: string;
+};
+type PlaceLimitOrderOptions = {
+  figi: string;
+  lots: number;
+  operation: OperationType;
+  price: number;
 };
 
 export class TinkoffInvestAPI {
@@ -155,15 +171,15 @@ export class TinkoffInvestAPI {
 
   @tryCatchAsync
   async stocks(): ResultAsync<MarketInstrument[], Error> {
-    type PayloadType = {
+    type rT = Response<{
       total: number;
       instruments: MarketInstrument[];
-    };
+    }>;
     const {
       status,
       headers,
       data,
-    } = (await this.instance.get<Response<PayloadType>>("/market/stocks"))
+    } = (await this.instance.get<rT>("/market/stocks"))
       .unwrap();
     const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
       .unwrap();
@@ -176,9 +192,9 @@ export class TinkoffInvestAPI {
     to: Date,
     options: OperationsOptions = {},
   ): ResultAsync<Operation[], Error> {
-    type PayloadType = {
+    type rT = Response<{
       operations: Operation[];
-    };
+    }>;
     const { figi, account } = options;
     const params = new URLSearchParams({
       from: from.toISOString(),
@@ -187,7 +203,7 @@ export class TinkoffInvestAPI {
     if (figi) params.set("figi", figi);
     if (account) params.set("brokerAccountId", account);
     const { status, headers, data } =
-      (await this.instance.get<Response<PayloadType>>("/operations", {
+      (await this.instance.get<rT>("/operations", {
         params,
       })).unwrap();
     const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
@@ -226,5 +242,32 @@ export class TinkoffInvestAPI {
       )).unwrap();
     (await TinkoffInvestAPI.checkData(status, headers, data)).unwrap();
     return ok(null);
+  }
+
+  @tryCatchAsync
+  async placeLimitOrder(
+    options: PlaceLimitOrderOptions,
+  ): ResultAsync<PlacedLimitOrder, Error> {
+    type dT = Record<string, unknown>;
+    type rT = Response<PlacedLimitOrder>;
+    const { figi, operation, lots, price } = options;
+    const params = new URLSearchParams({
+      figi,
+    });
+    const payload = {
+      operation,
+      lots,
+      price,
+    };
+    const { status, headers, data } = (await this.instance.post<dT, rT>(
+      "/orders/limit-order",
+      payload,
+      {
+        params,
+      },
+    )).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
+    return ok(_data.payload);
   }
 }
