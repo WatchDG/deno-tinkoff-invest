@@ -111,7 +111,7 @@ export class TinkoffInvestAPI {
   }
 
   @tryCatchAsync
-  async cancelOrder(orderId: string, options: Account) {
+  async cancelOrder(orderId: string, options: Account = {}) {
     const { account } = options;
     const params = new URLSearchParams({
       orderId,
