@@ -1,161 +1,24 @@
 import { fail, Instance, ok, tryCatch, tryCatchAsync } from "./deps.ts";
 import type { Result, ResultAsync } from "./deps.ts";
 
-type Options = {
-  baseUrl: string;
-  token: string;
-};
-
-type Response<ResponseType> = {
-  trackingId: string;
-  payload: ResponseType;
-  status: "OK";
-};
-
-type ResponseError = {
-  trackingId: string;
-  payload: {
-    message: string;
-    code: string;
-  };
-  status: "Error";
-};
-
-type InstrumentType = "Stock" | "Currency" | "Bond" | "Etf";
-type Currency =
-  | "RUB"
-  | "USD"
-  | "EUR"
-  | "GBP"
-  | "HKD"
-  | "CHF"
-  | "JPY"
-  | "CNY"
-  | "TRY";
-type MarketInstrument = {
-  figi: string;
-  ticker: string;
-  isin?: string;
-  minPriceIncrement?: number;
-  lot: number;
-  currency?: Currency;
-  name: string;
-  type: InstrumentType;
-};
-type OperationStatus = "Done" | "Decline" | "Progress";
-type OperationTrade = {
-  tradeId: string;
-  date: string;
-  price: number;
-  quantity: number;
-};
-type MoneyAmount = {
-  currency: Currency;
-  value: number;
-};
-type OperationTypeWithCommission =
-  | "Buy"
-  | "BuyCard"
-  | "Sell"
-  | "BrokerCommission"
-  | "ExchangeCommission"
-  | "ServiceCommission"
-  | "MarginCommission"
-  | "OtherCommission"
-  | "PayIn"
-  | "PayOut"
-  | "Tax"
-  | "TaxLucre"
-  | "TaxDividend"
-  | "TaxCoupon"
-  | "TaxBack"
-  | "Repayment"
-  | "PartRepayment"
-  | "Coupon"
-  | "Dividend"
-  | "SecurityIn"
-  | "SecurityOut";
-type Operation = {
-  id: string;
-  status: OperationStatus;
-  trades?: OperationTrade[];
-  commission?: MoneyAmount;
-  currency: Currency;
-  payment: number;
-  price?: number;
-  quantity?: number;
-  figi?: string;
-  instrumentType?: InstrumentType;
-  isMarginCall: boolean;
-  date: string;
-  operationType?: OperationTypeWithCommission;
-};
-type OperationType = "Buy" | "Sell";
-type OrderStatus =
-  | "New"
-  | "PartiallyFill"
-  | "Fill"
-  | "Cancelled"
-  | "Replaced"
-  | "PendingCancel"
-  | "Rejected"
-  | "PendingReplace"
-  | "PendingNew";
-type OrderType = "Limit" | "Market";
-type Order = {
-  orderId: string;
-  figi: string;
-  operation: OperationType;
-  status: OrderStatus;
-  requestedLots: number;
-  executedLots: number;
-  type: OrderType;
-  price: number;
-};
-type PlacedLimitOrder = {
-  orderId: string;
-  operation: OperationType;
-  status: OrderStatus;
-  rejectReason?: string;
-  message?: string;
-  requestedLots: number;
-  executedLots: number;
-  commission?: MoneyAmount;
-};
-type PlacedMarketOrder = {
-  orderId: string;
-  operation: OperationType;
-  status: OrderStatus;
-  rejectReason?: string;
-  message?: string;
-  requestedLots: number;
-  executedLots: number;
-  commission?: MoneyAmount;
-};
-type BrokerAccountType = "Tinkoff" | "TinkoffIis";
-type UserAccount = {
-  brokerAccountType: BrokerAccountType;
-  brokerAccountId: string;
-};
-
-type OperationsOptions = {
-  figi?: string;
-  account?: string;
-};
-type ActiveOrdersOptions = {
-  account?: string;
-};
-type PlaceLimitOrderOptions = {
-  figi: string;
-  lots: number;
-  operation: OperationType;
-  price: number;
-};
-type PlaceMarketOrderOptions = {
-  figi: string;
-  lots: number;
-  operation: OperationType;
-};
+import type {
+  Account,
+  ActiveOrdersOptions,
+  CurrencyPosition,
+  MarketInstrument,
+  Operation,
+  OperationsOptions,
+  Options,
+  Order,
+  PlacedLimitOrder,
+  PlacedMarketOrder,
+  PlaceLimitOrderOptions,
+  PlaceMarketOrderOptions,
+  PortfolioPosition,
+  Response,
+  ResponseError,
+  UserAccount,
+} from "./types.ts";
 
 export class TinkoffInvestAPI {
   private readonly instance: Instance;
@@ -248,10 +111,12 @@ export class TinkoffInvestAPI {
   }
 
   @tryCatchAsync
-  async cancelOrder(orderId: string) {
+  async cancelOrder(orderId: string, options: Account) {
+    const { account } = options;
     const params = new URLSearchParams({
       orderId,
     });
+    if (account) params.set("brokerAccountId", account);
     const { status, headers, data } =
       (await this.instance.post<undefined, Response<{}>>(
         "/orders/cancel",
@@ -327,5 +192,43 @@ export class TinkoffInvestAPI {
     const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
       .unwrap();
     return ok(_data.payload.accounts);
+  }
+
+  @tryCatchAsync
+  async portfolio(
+    options: Account = {},
+  ): ResultAsync<PortfolioPosition[], Error> {
+    type rT = Response<{
+      positions: PortfolioPosition[];
+    }>;
+    const { account } = options;
+    const params = new URLSearchParams();
+    if (account) params.set("brokerAccountId", account);
+    const { status, headers, data } =
+      (await this.instance.get<rT>("/portfolio", {
+        params,
+      })).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
+    return ok(_data.payload.positions);
+  }
+
+  @tryCatchAsync
+  async currencyPortfolio(
+    options: Account = {},
+  ): ResultAsync<CurrencyPosition[], Error> {
+    type rT = Response<{
+      currencies: CurrencyPosition[];
+    }>;
+    const { account } = options;
+    const params = new URLSearchParams();
+    if (account) params.set("brokerAccountId", account);
+    const { status, headers, data } =
+      (await this.instance.get<rT>("/portfolio/currencies", {
+        params,
+      })).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
+    return ok(_data.payload.currencies);
   }
 }
