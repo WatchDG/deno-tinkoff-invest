@@ -122,6 +122,16 @@ type PlacedLimitOrder = {
   executedLots: number;
   commission?: MoneyAmount;
 };
+type PlacedMarketOrder = {
+  orderId: string;
+  operation: OperationType;
+  status: OrderStatus;
+  rejectReason?: string;
+  message?: string;
+  requestedLots: number;
+  executedLots: number;
+  commission?: MoneyAmount;
+};
 
 type OperationsOptions = {
   figi?: string;
@@ -135,6 +145,11 @@ type PlaceLimitOrderOptions = {
   lots: number;
   operation: OperationType;
   price: number;
+};
+type PlaceMarketOrderOptions = {
+  figi: string;
+  lots: number;
+  operation: OperationType;
 };
 
 export class TinkoffInvestAPI {
@@ -261,6 +276,32 @@ export class TinkoffInvestAPI {
     };
     const { status, headers, data } = (await this.instance.post<dT, rT>(
       "/orders/limit-order",
+      payload,
+      {
+        params,
+      },
+    )).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
+    return ok(_data.payload);
+  }
+
+  @tryCatchAsync
+  async placeMarketOrder(
+    options: PlaceMarketOrderOptions,
+  ): ResultAsync<PlacedMarketOrder, Error> {
+    type dT = Record<string, unknown>;
+    type rT = Response<PlacedMarketOrder>;
+    const { figi, operation, lots } = options;
+    const params = new URLSearchParams({
+      figi,
+    });
+    const payload = {
+      operation,
+      lots,
+    };
+    const { status, headers, data } = (await this.instance.post<dT, rT>(
+      "/orders/market-order",
       payload,
       {
         params,
