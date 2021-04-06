@@ -132,6 +132,11 @@ type PlacedMarketOrder = {
   executedLots: number;
   commission?: MoneyAmount;
 };
+type BrokerAccountType = "Tinkoff" | "TinkoffIis";
+type UserAccount = {
+  brokerAccountType: BrokerAccountType;
+  brokerAccountId: string;
+};
 
 type OperationsOptions = {
   figi?: string;
@@ -310,5 +315,17 @@ export class TinkoffInvestAPI {
     const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
       .unwrap();
     return ok(_data.payload);
+  }
+
+  @tryCatchAsync
+  async accounts(): ResultAsync<UserAccount[], Error> {
+    type rT = Response<{
+      accounts: UserAccount[];
+    }>;
+    const { status, headers, data } =
+      (await this.instance.get<rT>("/user/accounts")).unwrap();
+    const _data = (await TinkoffInvestAPI.checkData(status, headers, data))
+      .unwrap();
+    return ok(_data.payload.accounts);
   }
 }
