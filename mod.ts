@@ -1,5 +1,5 @@
 import { fail, Instance, ok, tryCatch, tryCatchAsync } from "./deps.ts";
-import type { Result, ResultAsync } from "./deps.ts";
+import type { TResult, TResultAsync } from "./deps.ts";
 
 import type {
   Account,
@@ -37,7 +37,7 @@ export class TinkoffInvestAPI {
     status: number,
     headers: Headers,
     data?: ResponseType,
-  ): Result<ResponseType, Error> {
+  ): TResult<ResponseType, Error> {
     if (status < 200 || status >= 300) {
       if (data) {
         const errorData = data as unknown as ResponseError;
@@ -53,7 +53,7 @@ export class TinkoffInvestAPI {
   }
 
   @tryCatchAsync
-  async stocks(): ResultAsync<MarketInstrument[], Error> {
+  async stocks(): TResultAsync<MarketInstrument[], Error> {
     type rT = Response<{
       total: number;
       instruments: MarketInstrument[];
@@ -74,7 +74,7 @@ export class TinkoffInvestAPI {
     from: Date,
     to: Date,
     options: OperationsOptions = {},
-  ): ResultAsync<Operation[], Error> {
+  ): TResultAsync<Operation[], Error> {
     type rT = Response<{
       operations: Operation[];
     }>;
@@ -97,7 +97,7 @@ export class TinkoffInvestAPI {
   @tryCatchAsync
   async activeOrders(
     options: ActiveOrdersOptions = {},
-  ): ResultAsync<Order[], Error> {
+  ): TResultAsync<Order[], Error> {
     type rT = Response<Order[]>;
     const { account } = options;
     const params = new URLSearchParams();
@@ -118,7 +118,7 @@ export class TinkoffInvestAPI {
     });
     if (account) params.set("brokerAccountId", account);
     const { status, headers, data } =
-      (await this.instance.post<undefined, Response<{}>>(
+      (await this.instance.post<undefined, Response<unknown>>(
         "/orders/cancel",
         void 0,
         {
@@ -132,7 +132,7 @@ export class TinkoffInvestAPI {
   @tryCatchAsync
   async placeLimitOrder(
     options: PlaceLimitOrderOptions,
-  ): ResultAsync<PlacedLimitOrder, Error> {
+  ): TResultAsync<PlacedLimitOrder, Error> {
     type dT = Record<string, unknown>;
     type rT = Response<PlacedLimitOrder>;
     const { figi, operation, lots, price } = options;
@@ -159,7 +159,7 @@ export class TinkoffInvestAPI {
   @tryCatchAsync
   async placeMarketOrder(
     options: PlaceMarketOrderOptions,
-  ): ResultAsync<PlacedMarketOrder, Error> {
+  ): TResultAsync<PlacedMarketOrder, Error> {
     type dT = Record<string, unknown>;
     type rT = Response<PlacedMarketOrder>;
     const { figi, operation, lots } = options;
@@ -183,7 +183,7 @@ export class TinkoffInvestAPI {
   }
 
   @tryCatchAsync
-  async accounts(): ResultAsync<UserAccount[], Error> {
+  async accounts(): TResultAsync<UserAccount[], Error> {
     type rT = Response<{
       accounts: UserAccount[];
     }>;
@@ -197,7 +197,7 @@ export class TinkoffInvestAPI {
   @tryCatchAsync
   async portfolio(
     options: Account = {},
-  ): ResultAsync<PortfolioPosition[], Error> {
+  ): TResultAsync<PortfolioPosition[], Error> {
     type rT = Response<{
       positions: PortfolioPosition[];
     }>;
@@ -216,7 +216,7 @@ export class TinkoffInvestAPI {
   @tryCatchAsync
   async currencyPortfolio(
     options: Account = {},
-  ): ResultAsync<CurrencyPosition[], Error> {
+  ): TResultAsync<CurrencyPosition[], Error> {
     type rT = Response<{
       currencies: CurrencyPosition[];
     }>;
