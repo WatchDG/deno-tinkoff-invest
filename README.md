@@ -42,6 +42,28 @@ const activeOrders = (await api.activeOrders()).unwrap();
 console.log(activeOrders);
 ```
 
+### place limit order
+
+```ts
+const operation = 'Buy';
+const figi = '...';
+const lots = 1;
+const price = 0;
+const limitOrder = (await api.placeLimitOrder({
+    operation,
+    figi,
+    lots,
+    price
+})).unwrap();
+```
+
+### cancel order
+
+```ts
+const orderId = '...';
+(await api.cancelOrder(orderId)).unwrap();
+```
+
 ### get operations
 
 ```ts
