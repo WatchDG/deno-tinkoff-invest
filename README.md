@@ -34,3 +34,20 @@ import {TinkoffInvestAPI} from './deps.ts';
 const stocks = (await api.stocks()).unwrap();
 console.log(stocks);
 ```
+
+### get active orders
+
+```ts
+const activeOrders = (await api.activeOrders()).unwrap();
+console.log(activeOrders);
+```
+
+### get operations
+
+```ts
+const toDate = new Date();
+const fromDate = new Date(toDate);
+fromDate.setMonth(fromDate.getMonth() - 1);
+const operations = (await api.operations(fromDate, toDate)).unwrap();
+console.log(operations);
+```
